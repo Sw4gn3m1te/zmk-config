@@ -33,8 +33,8 @@
 &kp ESC   &kp N1 &kp N2    &kp N3   &kp N4   &kp N5                     &kp N6 &kp N7   &kp N8    &kp N9   &kp N0   &kp GRAVE
 &kp TAB   &kp Q  &kp W     &kp E    &kp R    &kp T                      &rgb_ug RGB_TOG  &bl BL_TOG    &kp I     &kp O    &kp P    &kp MINUS
 &kp LCTRL &kp A  &kp S     &kp D    &kp F    &kp G                      &rgb_ug RGB_COLOR_HSB(128,100,100)  &bl BL_SET 50    &kp K     &kp L    &kp SEMI &kp SQT
-&kp LSHFT &kp Z  &kp X     &kp C    &kp V    &kp B  &kp LBKT   &kp RBKT &rgb_ug RGB_COLOR_HSB(120,100,100)  &bl BL_SET 100    &kp COMMA &kp DOT  &kp FSLH &kp RSHFT
-                 &kp LCTRL &kp LALT &kp LGUI &mo 1  &kp SPACE  &kp RET  &rgb_ug RGB_COLOR_HSB(100,100,100)  &kp BSPC &kp RGUI  &kp RALT
+&kp LSHFT &kp Z  &kp X     &kp C    &kp V    &kp B  &kp LBKT   &kp RBKT   &bl BL_SET 100    &kp COMMA &kp DOT  &kp FSLH &kp RSHFT
+                 &kp LCTRL &kp LALT &kp LGUI &mo 1  &kp SPACE  &kp RET  &rgb_ug RGB_COLOR_HSB(100,128,100)  &kp BSPC &kp RGUI  &kp RALT
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
