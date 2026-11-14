@@ -8,64 +8,172 @@
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/ext_power.h>
 #include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/outputs.h>
 #include <dt-bindings/zmk/rgb.h>
 
+// Aurora Sofle v2 LED chain, per half: 6 WS2812B underglow + 29 SK6812 MINI-E per-key = 35.
+// The strip itself (SPI3, data on P0.06, GRB order) is already defined by ZMK's
+// splitkb_aurora_sofle shield for nice!nano; only the length needs overriding here.
+&led_strip {
+    chain-length = <35>;
+};
+
+// ---------------------------------------------------------------------------
+// German (QWERTZ) layout on the host.
+// ZMK sends US key positions; these aliases name what the German OS layout
+// actually types for each position.
+// ---------------------------------------------------------------------------
+#define DE_Z      Y
+#define DE_Y      Z
+#define DE_UE     LBKT              // ü
+#define DE_OE     SEMI              // ö
+#define DE_AE     SQT               // ä
+#define DE_SZ     MINUS             // ß
+#define DE_LT     NUBS              // <
+#define DE_GT     LS(NUBS)          // >
+#define DE_PIPE   RA(NUBS)          // |
+#define DE_MINUS  FSLH              // -
+#define DE_UNDER  LS(FSLH)          // _
+#define DE_PLUS   RBKT              // +
+#define DE_STAR   LS(RBKT)          // *
+#define DE_TILDE  RA(RBKT)          // ~
+#define DE_HASH   NUHS              // #
+#define DE_SQT    LS(NUHS)          // '
+#define DE_EXCL   LS(N1)            // !
+#define DE_DQT    LS(N2)            // "
+#define DE_DLLR   LS(N4)            // $
+#define DE_PRCNT  LS(N5)            // %
+#define DE_AMPS   LS(N6)            // &
+#define DE_SLASH  LS(N7)            // /
+#define DE_LPAR   LS(N8)            // (
+#define DE_RPAR   LS(N9)            // )
+#define DE_EQUAL  LS(N0)            // =
+#define DE_QMARK  LS(MINUS)         // ?
+#define DE_LBRC   RA(N7)            // {
+#define DE_LBKT   RA(N8)            // [
+#define DE_RBKT   RA(N9)            // ]
+#define DE_RBRC   RA(N0)            // }
+#define DE_BSLH   RA(MINUS)         // backslash
+#define DE_AT     RA(Q)             // @
+#define DE_COLON  LS(DOT)           // :
+#define DE_SEMI   LS(COMMA)         // ;
+#define DE_SUP2   RA(N2)            // ²
+#define DE_SUP3   RA(N3)            // ³
+
+// ---------------------------------------------------------------------------
+// Unicode characters the German layout can't type, sent with Windows'
+// hex-numpad input: hold Alt, numpad +, the hex code point, release Alt.
+// Needs EnableHexNumpad = "1" (REG_SZ) under HKCU\Control Panel\Input Method,
+// a sign-out afterwards, and NumLock on.
+// ---------------------------------------------------------------------------
+#define UNICODE(name, h1, h2, h3, h4)                                   \
+    ZMK_MACRO(name,                                                      \
+        bindings = <&macro_press &kp LALT>,                              \
+                   <&macro_tap &kp KP_PLUS &kp h1 &kp h2 &kp h3 &kp h4>, \
+                   <&macro_release &kp LALT>;                            \
+    )
+
 / {
+    macros {
+        // ^ and ` are dead keys on the German layout; follow them with a space
+        // so they type the plain character.
+        de_caret: de_caret {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&kp GRAVE &kp SPACE>;
+        };
+        de_grave: de_grave {
+            compatible = "zmk,behavior-macro";
+            #binding-cells = <0>;
+            bindings = <&kp LS(EQUAL) &kp SPACE>;
+        };
+
+        UNICODE(uc_sup0,   KP_N2, KP_N0, KP_N7, KP_N0)   // ⁰ U+2070
+        UNICODE(uc_sup1,   KP_N0, KP_N0, B,     KP_N9)   // ¹ U+00B9
+        UNICODE(uc_sup4,   KP_N2, KP_N0, KP_N7, KP_N4)   // ⁴ U+2074
+        UNICODE(uc_sup5,   KP_N2, KP_N0, KP_N7, KP_N5)   // ⁵ U+2075
+        UNICODE(uc_forall, KP_N2, KP_N2, KP_N0, KP_N0)   // ∀ U+2200
+        UNICODE(uc_exists, KP_N2, KP_N2, KP_N0, KP_N3)   // ∃ U+2203
+        UNICODE(uc_or,     KP_N2, KP_N2, KP_N2, KP_N8)   // ∨ U+2228
+        UNICODE(uc_and,    KP_N2, KP_N2, KP_N2, KP_N7)   // ∧ U+2227
+        UNICODE(uc_not,    KP_N0, KP_N0, A,     C)       // ¬ U+00AC
+        UNICODE(uc_larr,   KP_N2, KP_N1, KP_N9, KP_N0)   // ← U+2190
+        UNICODE(uc_uarr,   KP_N2, KP_N1, KP_N9, KP_N1)   // ↑ U+2191
+        UNICODE(uc_rarr,   KP_N2, KP_N1, KP_N9, KP_N2)   // → U+2192
+        UNICODE(uc_darr,   KP_N2, KP_N1, KP_N9, KP_N3)   // ↓ U+2193
+    };
+
     keymap {
         compatible = "zmk,keymap";
 
-        default_layer {
-            // ------------------------------------------------------------------------------------------------------------
-            // |  `    |  1  |  2  |  3   |  4   |  5   |                   |  6   |  7    |  8    |  9   |   0   | BKSPC |
-            // |  TAB  |  Q  |  W  |  E   |  R   |  T   |                   |  Y   |  U    |  I    |  O   |   P   |   \   |
-            // | C/ESC |  A  |  S  |  D   |  F   |  G   |                   |  H   |  J    |  K    |  L   |   ;   |  '  |
-            // | SHIFT |  Z  |  X  |  C   |  V   |  B   |  PLAY  |  | NEXT  |  N   |  M    |  ,    |  .   |   /   | SHIFT |
-            //               | CAPS| ALT  | GUI/-| SPACE|LOWER/[ |  |RAISE/]| ENTER|  GUI/=|  ALT  | CTRL |
+        // Row 4 of each layer: left half, then the two encoder push buttons
+        // (left, right), then the right half.
 
+        base_layer {
+            // | Esc   | 1   | 2   | 3   | 4   | 5   |                   | 6   | 7   | 8   | 9   | 0   | Bksp |
+            // | Tab   | q   | w   | e   | r   | t   |                   | z   | u   | i   | o   | p   | ü    |
+            // | Caps  | a   | s   | d   | f   | g   |                   | h   | j   | k   | l   | ö   | ä    |
+            // | Shift | y   | x   | c   | v   | b   | Prev |     | Next | n   | m   | ,   | .   | ß   | Del  |
+            //             | <>| | Win | Alt |Space| Ctrl |     |Enter | L1  | L2  |AltGr| L3  |
             bindings = <
-&kp N5  &kp N4  &kp N3      &kp N2     &kp N1          &kp GRAVE                              &kp N6   &kp N7          &kp N8     &kp N9     &kp N0    &kp BSPC
-&kp T   &kp R   &kp E       &kp W      &kp Q           &kp ESC                                &kp Y    &kp U           &kp I      &kp O      &kp P     &kp BSLH
-&kp G   &kp F   &kp D       &kp S      &kp A           &mt LCTRL TAB                          &kp H    &kp J           &kp K      &kp L      &kp SEMI  &kp SQT
-&kp B   &kp V   &kp C       &kp X      &kp Z           &kp LSHFT      &kp C_PP    &kp C_NEXT  &kp N    &kp M           &kp COMMA  &kp DOT    &kp FSLH  &kp RSHFT
-                &lt 1 LBKT  &kp SPACE  &mt LGUI MINUS  &kp LALT       &kp CLCK    &lt 2 RBKT  &kp RET  &mt RGUI EQUAL  &kp RALT   &kp RCTRL
+&kp ESC    &kp N1    &kp N2    &kp N3    &kp N4    &kp N5                            &kp N6    &kp N7    &kp N8     &kp N9    &kp N0     &kp BSPC
+&kp TAB    &kp Q     &kp W     &kp E     &kp R     &kp T                             &kp DE_Z  &kp U     &kp I      &kp O     &kp P      &kp DE_UE
+&kp CAPS   &kp A     &kp S     &kp D     &kp F     &kp G                             &kp H     &kp J     &kp K      &kp L     &kp DE_OE  &kp DE_AE
+&kp LSHFT  &kp DE_Y  &kp X     &kp C     &kp V     &kp B      &kp C_PREV &kp C_NEXT  &kp N     &kp M     &kp COMMA  &kp DOT   &kp DE_SZ  &kp DEL
+                     &kp NUBS  &kp LGUI  &kp LALT  &kp SPACE  &kp LCTRL  &kp RET     &mo 1     &mo 2     &kp RALT   &mo 3
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp PG_DN PG_UP>;
         };
 
-        lower_layer {
-            // ------------------------------------------------------------------------------------------------------------
-            // |   TOG    |  F1 |  F2 |  F3  |  F4  |  F5  |                   |  F6  |  F7   |  F8   |  F9  |  F10  |  F11  |
-            // |       |   1 |   2 |   3  |   4  |   5  |                   |   6  |   7   |   8   |   9  |    0  |  F12  |
-            // |       |  !  |  @  |  #   |  $   |  %   |                   |  ^   |  &    |  *    |  (   |   )   |       |
-            // |       |  -  |  _  |  [   |  {   |  \   |        |  |       |  |   |  }    |  ]    |  =   |   +   |       |
-            //               |     |      |      |      |        |  |       |      |       |       |      |
-
+        symbol_layer {
+            // | F12 | F1  | F2  | F3  | F4  | F5  |                   | F6  | F7  | F8  | F9  | F10 | F11 |
+            // | Tab |     | _   | [   | ]   | ^   |                   | !   | <   | >   | =   | &   |     |
+            // |     | \   | /   | {   | }   | *   |                   | ?   | (   | )   | -   | :   | @   |
+            // |     | #   | $   | |   | ~   | `   | Play |     | Mute  | +   | %   | "   | '   | ;   |     |
+            //             |     | Win | Alt |Space| Ctrl|     |Enter|(held)|     |     |     |
             bindings = <
-&kp F5     &kp F4    &kp F3    &kp F2     &kp F1        &ext_power EP_TOG                    &kp F6     &kp F7    &kp F8           &kp F9     &kp F10   &kp F11
-&kp N5     &kp N4    &kp N3    &kp N2     &kp NUMBER_1  &trans                               &kp N6     &kp N7    &kp N8           &kp N9     &kp N0    &kp F12
-&kp PRCNT  &kp DLLR  &kp HASH  &kp AT     &kp EXCL      &trans                               &kp CARET  &kp AMPS  &kp KP_MULTIPLY  &kp LPAR   &kp RPAR  &trans
-&kp BSLH   &kp LBRC  &kp LBKT  &kp UNDER  &kp MINUS     &trans             &trans    &trans  &kp PIPE   &kp RBRC  &kp RBKT         &kp EQUAL  &kp PLUS  &trans
-                     &trans    &trans     &trans        &ext_power EP_TOG  &trans    &trans  &trans     &trans    &trans           &trans
+&kp F12   &kp F1       &kp F2        &kp F3        &kp F4         &kp F5                             &kp F6        &kp F7        &kp F8        &kp F9       &kp F10       &kp F11
+&kp TAB   &none        &kp DE_UNDER  &kp DE_LBKT   &kp DE_RBKT    &de_caret                          &kp DE_EXCL   &kp DE_LT     &kp DE_GT     &kp DE_EQUAL &kp DE_AMPS   &none
+&none     &kp DE_BSLH  &kp DE_SLASH  &kp DE_LBRC   &kp DE_RBRC    &kp DE_STAR                        &kp DE_QMARK  &kp DE_LPAR   &kp DE_RPAR   &kp DE_MINUS &kp DE_COLON  &kp DE_AT
+&none     &kp DE_HASH  &kp DE_DLLR   &kp DE_PIPE   &kp DE_TILDE   &de_grave   &kp C_PP   &kp C_MUTE  &kp DE_PLUS   &kp DE_PRCNT  &kp DE_DQT    &kp DE_SQT   &kp DE_SEMI   &none
+                       &none         &kp LGUI      &kp LALT       &kp SPACE   &kp LCTRL  &kp RET     &trans        &none         &none         &none
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp PG_DN PG_UP>;
         };
 
-        raise_layer {
-            // ------------------------------------------------------------------------------------------------------------
-            // |  ON   |  F1  |  F2  |  F3   |  F4   |  F5  |                |  F6  |  F7  |  F8   |  F9  |  F10  |  F11  |
-            // |     | BT1  | BT2  |  BT3  |  BT4  |  BT5 |                | PGUP |  END |   ^   | HOME |  INS  |  F12  |
-            // |     | RGBT | RGB- | RGB+  |  BR-  |  BR+ |                | PGDN |   <- |   v   | ->   |  DEL  | C/CAPS|
-            // |     |BTCLR | HUD  | HUI   |  SAD  |  SAI |      |  |      | SCRL | PRVS | PLAY  | NEXT |  PSCR |       |
-            //              |      |       |       |      |      |  |      |      |      |       |      |
-
+        nav_num_layer {
+            // |     |      |      |      |      |      |                  | ⁰   | ¹   | ²   | ³   | ⁴   | ⁵   |
+            // | Tab | PgUp | Bksp | Up   | Del  | PgDn |                  | ¬   | 7   | 8   | 9   | ∀   | ∃   |
+            // |     | Home | Left | Down | Right| End  |                  | ↑   | 4   | 5   | 6   | ∨   | ∧   |
+            // |     |      |      |      | Enter|      |      |    |      | ↓   | 1   | 2   | 3   | ←   | →   |
+            //              |      |      |      |      |      |    |      |     |(held)|    |     |
             bindings = <
-&kp F5           &kp F4           &kp F3           &kp F2           &kp F1           &trans                              &kp F6             &kp F7      &kp F8    &kp F9      &kp F10    &kp F11
-&bt BT_SEL 5     &bt BT_SEL 4     &bt BT_SEL 3     &bt BT_SEL 2     &bt BT_SEL 1     &ext_power EP_ON                    &kp PG_UP          &kp END     &kp UP    &kp HOME    &kp INS    &kp F12
-&rgb_ug RGB_BRI  &rgb_ug RGB_BRD  &rgb_ug RGB_EFF  &rgb_ug RGB_EFR  &rgb_ug RGB_TOG  &trans                              &kp PG_DN          &kp LEFT    &kp DOWN  &kp RIGHT   &kp DEL    &mt RCTRL CLCK
-&trans           &rgb_ug RGB_SAI  &rgb_ug RGB_SAD  &rgb_ug RGB_HUD  &rgb_ug RGB_HUI  &bt BT_CLR        &trans    &trans  &kp SLCK           &kp C_PREV  &kp C_PP  &kp C_NEXT  &kp PSCRN  &trans
-                                  &trans           &trans           &trans           &trans            &trans    &trans  &ext_power EP_TOG  &trans      &trans    &trans
+&none     &none      &none      &none      &none       &none                       &uc_sup0   &uc_sup1  &kp DE_SUP2  &kp DE_SUP3  &uc_sup4    &uc_sup5
+&kp TAB   &kp PG_UP  &kp BSPC   &kp UP     &kp DEL     &kp PG_DN                   &uc_not    &kp N7    &kp N8       &kp N9       &uc_forall  &uc_exists
+&none     &kp HOME   &kp LEFT   &kp DOWN   &kp RIGHT   &kp END                     &uc_uarr   &kp N4    &kp N5       &kp N6       &uc_or      &uc_and
+&none     &none      &none      &none      &kp RET     &none    &trans    &trans   &uc_darr   &kp N1    &kp N2       &kp N3       &uc_larr    &uc_rarr
+                     &none      &none      &none       &none    &none     &none    &none      &trans    &none        &none
+            >;
+
+            sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp PG_DN PG_UP>;
+        };
+
+        system_layer {
+            // | BT4   | BT3   | BT2    | BT1    | BT0    | BTClr  |                    |  right half: only Reset   |
+            // | Brt+  | Brt-  | EffNxt | EffPrv | RGBTog |        |                    |                           |
+            // | Sat+  | Sat-  | Hue+   | Hue-   | Spd+   | Spd-   |                    |                           |
+            // |       |       |        |        |        | USB/BT |     |        |     |                           |
+            //                 | Off    |        |        | ExtPwr | Reset |  | Reset |            |(held)        |
+            // &sys_reset only restarts the half it is pressed on, hence one per half.
+            // &soft_off turns both halves off; press each half's reset button to wake it.
+            bindings = <
+&bt BT_SEL 4     &bt BT_SEL 3     &bt BT_SEL 2     &bt BT_SEL 1     &bt BT_SEL 0     &bt BT_CLR                                &none  &none  &none  &none  &none  &none
+&rgb_ug RGB_BRI  &rgb_ug RGB_BRD  &rgb_ug RGB_EFF  &rgb_ug RGB_EFR  &rgb_ug RGB_TOG  &none                                     &none  &none  &none  &none  &none  &none
+&rgb_ug RGB_SAI  &rgb_ug RGB_SAD  &rgb_ug RGB_HUI  &rgb_ug RGB_HUD  &rgb_ug RGB_SPI  &rgb_ug RGB_SPD                           &none  &none  &none  &none  &none  &none
+&none            &none            &none            &none            &none            &out OUT_TOG       &trans      &trans      &none  &none  &none  &none  &none  &none
+                                  &soft_off        &none            &none            &ext_power EP_TOG  &sys_reset  &sys_reset  &none  &none  &none  &trans
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp PG_DN PG_UP>;
